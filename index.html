@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3f6fb">
+  <title>Number Guessing Game</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f3f6fb;
+      color: #183153;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      background: #11151d;
+      color: #edf4ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 280px;
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+      background: linear-gradient(145deg, #eef3ff, #f9fbff 55%, #eaf7f5);
+    }
+
+    :root[data-theme="dark"] body {
+      background: linear-gradient(145deg, #11151d, #171d29 55%, #102522);
+    }
+
+    button, input, select { font: inherit; }
+    button { touch-action: manipulation; }
+
+    .app {
+      width: min(100%, 430px);
+      min-height: min(740px, calc(100dvh - 32px));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(20px, 6vw, 32px);
+      border: 1px solid #e4eaf4;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 20px 60px rgba(24, 49, 83, 0.12);
+    }
+
+    :root[data-theme="dark"] .app {
+      border-color: #303a49;
+      background: rgba(31, 38, 50, 0.97);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    .topbar {
+      position: absolute;
+      top: max(16px, env(safe-area-inset-top));
+      right: max(16px, env(safe-area-inset-right));
+      z-index: 2;
+    }
+
+    .theme-toggle {
+      width: 46px;
+      height: 46px;
+      border: 1px solid #dce5f2;
+      border-radius: 50%;
+      background: #fff;
+      color: #183153;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    :root[data-theme="dark"] .theme-toggle,
+    :root[data-theme="dark"] select,
+    :root[data-theme="dark"] .guess {
+      border-color: #465367;
+      background: #171d29;
+      color: #edf4ff;
+    }
+
+    :root[data-theme="dark"] .setting-label,
+    :root[data-theme="dark"] h1,
+    :root[data-theme="dark"] h2 { color: #edf4ff; }
+    :root[data-theme="dark"] .description,
+    :root[data-theme="dark"] .level,
+    :root[data-theme="dark"] .hint,
+    :root[data-theme="dark"] .feedback { color: #b4c1d4; }
+    :root[data-theme="dark"] .button.secondary {
+      border-color: #465367;
+      background: #252e3c;
+      color: #8bb4ff;
+    }
+    :root[data-theme="dark"] .key {
+      border-color: #465367;
+      background: #2a3444;
+      color: #edf4ff;
+    }
+    :root[data-theme="dark"] .key.action { background: #354156; }
+    :root[data-theme="dark"] .feedback.success { color: #65e6a2; }
+    :root[data-theme="dark"] .feedback.error { color: #ffc078; }
+
+    .screen { width: 100%; text-align: center; }
+    .hidden { display: none !important; }
+    .eyebrow { margin: 0 0 10px; color: #2864dc; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.14em; }
+    h1 { margin: 0; font-size: clamp(1.65rem, 8vw, 2.2rem); line-height: 1.12; }
+    h2 { margin: 0; font-size: clamp(1.5rem, 7vw, 1.9rem); }
+    .description { margin: 14px 0 28px; color: #526176; line-height: 1.55; }
+
+    .button {
+      width: 100%;
+      min-height: 54px;
+      padding: 13px 18px;
+      border: 0;
+      border-radius: 15px;
+      background: #2864dc;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 7px 16px rgba(40, 100, 220, 0.2);
+    }
+    .button:active, .key:active { transform: scale(0.98); }
+    .button.secondary {
+      margin-top: 10px;
+      border: 1px solid #dce5f2;
+      background: #fff;
+      color: #2864dc;
+      box-shadow: none;
+    }
+    .button:disabled, .key:disabled { cursor: not-allowed; opacity: 0.48; }
+
+    .setting-label { display: block; margin: 22px 0 10px; text-align: left; font-weight: 700; }
+    select {
+      width: 100%;
+      min-height: 54px;
+      padding: 0 14px;
+      border: 1px solid #dce5f2;
+      border-radius: 14px;
+      background: #fff;
+      color: #183153;
+      font-size: 1rem;
+    }
+    .hint { margin: 12px 0 22px; color: #68788d; font-size: 0.88rem; line-height: 1.5; }
+
+    .level {
+      margin: 10px 0 18px;
+      color: #526176;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin: -8px 0 14px;
+      color: #526176;
+      font-size: 0.83rem;
+      font-weight: 700;
+    }
+    :root[data-theme="dark"] .stats { color: #c1cde0; }
+    .lives {
+      margin: 0 0 12px;
+      color: #d6336c;
+      font-size: 1.1rem;
+      letter-spacing: 0.08em;
+    }
+    :root[data-theme="dark"] .lives { color: #ff78a4; }
+    .guess {
+      width: 100%;
+      min-height: 58px;
+      margin-bottom: 14px;
+      padding: 10px 16px;
+      border: 2px solid #dce5f2;
+      border-radius: 16px;
+      outline: none;
+      color: #183153;
+      font-size: 1.6rem;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.12em;
+    }
+    .guess:focus { border-color: #2864dc; }
+
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+      margin: 0 auto 14px;
+      max-width: 310px;
+    }
+    .key {
+      min-height: 52px;
+      border: 1px solid #e0e8f3;
+      border-radius: 14px;
+      background: #f2f6fc;
+      color: #183153;
+      font-size: 1.12rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .key.action { background: #e8eef8; font-size: 0.9rem; }
+    .feedback {
+      min-height: 26px;
+      margin: 8px 0 12px;
+      color: #526176;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+    .feedback.success { color: #18834b; font-weight: 800; }
+    .feedback.success.celebration {
+      animation: congratulations-pop 760ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both,
+        congratulations-glow 1.1s ease-in-out 760ms 2;
+      font-size: clamp(1rem, 4.5vw, 1.2rem);
+      transform-origin: center;
+    }
+
+    @keyframes congratulations-pop {
+      0% { opacity: 0; transform: scale(0.45) rotate(-5deg); }
+      65% { opacity: 1; transform: scale(1.12) rotate(2deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0); }
+    }
+
+    @keyframes congratulations-glow {
+      0%, 100% { text-shadow: 0 0 0 transparent; }
+      50% { text-shadow: 0 0 16px rgba(24, 131, 75, 0.45); }
+    }
+
+    .feedback.error { color: #a64d00; }
+    :root[data-theme="dark"] .feedback.success.celebration {
+      animation-name: congratulations-pop, congratulations-neon;
+    }
+
+    @keyframes congratulations-neon {
+      0%, 100% { text-shadow: 0 0 0 transparent; }
+      50% { text-shadow: 0 0 18px rgba(101, 230, 162, 0.8); }
+    }
+
+    .game-actions { display: grid; gap: 9px; }
+
+    #flowerCanvas {
+      position: fixed;
+      z-index: 5;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    @media (max-height: 680px) {
+      body { padding: 8px 12px; }
+      .app { min-height: 0; padding: 14px 16px; }
+      .eyebrow { margin-bottom: 5px; }
+      .description { margin: 8px 0 14px; }
+      .level { margin: 4px 0 7px; }
+      .guess { min-height: 44px; margin-bottom: 6px; }
+      .keypad { gap: 4px; margin-bottom: 6px; }
+      .key { min-height: 38px; }
+      .feedback { min-height: 20px; margin: 0 0 5px; }
+      .game-actions { gap: 6px; }
+      .button { min-height: 42px; }
+      .button.secondary { margin-top: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">🌙</button>
+  </header>
+  <canvas id="flowerCanvas" aria-hidden="true"></canvas>
+  <main class="app">
+    <section id="homeScreen" class="screen">
+      <p class="eyebrow">A LITTLE CHALLENGE</p>
+      <h1>Number<br>Guessing Game</h1>
+      <p class="description">I'm thinking of a number. Can you guess it?</p>
+      <button id="startButton" class="button" type="button">Start Game</button>
+      <button id="settingsButton" class="button secondary" type="button">Settings</button>
+    </section>
+
+    <section id="settingsScreen" class="screen hidden">
+      <p class="eyebrow">MAKE IT YOURS</p>
+      <h2>Settings</h2>
+      <label class="setting-label" for="difficultySelect">Choose difficulty</label>
+      <select id="difficultySelect">
+        <option value="Easy">Easy (1–10)</option>
+        <option value="Medium">Medium (1–50)</option>
+        <option value="Hard">Hard (1–100)</option>
+      </select>
+      <p class="hint">The number range grows with each level.</p>
+      <button id="saveSettingsButton" class="button" type="button">Save Settings</button>
+      <button id="settingsBackButton" class="button secondary" type="button">Back</button>
+    </section>
+
+    <section id="gameScreen" class="screen hidden">
+      <p class="eyebrow">NUMBER GUESSING GAME</p>
+      <h2>Guess the number</h2>
+      <p id="levelLabel" class="level"></p>
+      <div class="stats">
+        <span id="attemptsLabel">Guesses: 0</span>
+        <span id="bestScoreLabel">Best Score: —</span>
+      </div>
+      <p id="livesLabel" class="lives" aria-label="Lives"></p>
+      <input id="guessInput" class="guess" type="text" inputmode="none" autocomplete="off"
+             aria-label="Your number guess" readonly>
+      <div id="keypad" class="keypad" aria-label="Number keypad"></div>
+      <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+      <div class="game-actions">
+        <button id="checkButton" class="button" type="button">Check Guess</button>
+        <button id="nextLevelButton" class="button hidden" type="button">Next Level</button>
+        <button id="resetButton" class="button hidden" type="button">Play Again</button>
+        <button id="homeButton" class="button secondary" type="button">Back to Home</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const ranges = { Easy: 10, Medium: 50, Hard: 100 };
+      const livesByDifficulty = { Easy: 5, Medium: 4, Hard: 3 };
+      const screens = {
+        home: document.getElementById("homeScreen"),
+        settings: document.getElementById("settingsScreen"),
+        game: document.getElementById("gameScreen"),
+      };
+      const input = document.getElementById("guessInput");
+      const feedback = document.getElementById("feedback");
+      const keypad = document.getElementById("keypad");
+      const canvas = document.getElementById("flowerCanvas");
+      const context = canvas.getContext("2d");
+      let difficulty = "Easy";
+      let level = 1;
+      let maximum = ranges[difficulty];
+      let answer = randomNumber(maximum);
+      let hasWon = false;
+      let attempts = 0;
+      let lives = livesByDifficulty[difficulty];
+      let bestScores = loadBestScores();
+      let audioContext = null;
+      let animationFrame = 0;
+      let animationStartedAt = 0;
+      let flowers = [];
+      let confetti = [];
+
+      function randomNumber(max) {
+        return Math.floor(Math.random() * max) + 1;
+      }
+
+      function loadBestScores() {
+        try {
+          const scores = JSON.parse(localStorage.getItem("numberGuessBestScores") || "{}");
+          return scores && typeof scores === "object" && !Array.isArray(scores) ? scores : {};
+        } catch {
+          return {};
+        }
+      }
+
+      function getBestScore() {
+        const score = bestScores[difficulty]?.[String(level)];
+        return Number.isInteger(score) && score > 0 ? score : null;
+      }
+
+      function saveBestScore() {
+        const difficultyScores = bestScores[difficulty] || {};
+        const currentBest = getBestScore();
+        if (currentBest === null || attempts < currentBest) {
+          difficultyScores[String(level)] = attempts;
+          bestScores[difficulty] = difficultyScores;
+          try {
+            localStorage.setItem("numberGuessBestScores", JSON.stringify(bestScores));
+          } catch {
+            // Keep the best score for the current page session if storage is unavailable.
+          }
+        }
+        updateStats();
+      }
+
+      function updateStats() {
+        document.getElementById("attemptsLabel").textContent = `Guesses: ${attempts}`;
+        document.getElementById("bestScoreLabel").textContent =
+          `Best Score: ${getBestScore() ?? "—"}`;
+        const fullHearts = "♥ ".repeat(lives).trim();
+        const emptyHearts = "♡ ".repeat(livesByDifficulty[difficulty] - lives).trim();
+        const hearts = [fullHearts, emptyHearts].filter(Boolean).join(" ");
+        const livesLabel = document.getElementById("livesLabel");
+        livesLabel.textContent = `Lives: ${hearts}`;
+        livesLabel.setAttribute("aria-label", `${lives} lives remaining`);
+      }
+
+      function playTone(frequency, duration, type, volume) {
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          audioContext = audioContext || new AudioContextClass();
+          if (audioContext.state === "suspended") {
+            const resumeRequest = audioContext.resume();
+            if (resumeRequest && typeof resumeRequest.catch === "function") {
+              resumeRequest.catch(() => {});
+            }
+          }
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          oscillator.type = type;
+          oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+          gain.gain.setValueAtTime(volume, audioContext.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+          oscillator.connect(gain);
+          gain.connect(audioContext.destination);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + duration);
+        } catch {
+          // Audio is optional; gameplay continues when the browser blocks sound.
+        }
+      }
+
+      function playWrongSound() {
+        playTone(150, 0.18, "sawtooth", 0.08);
+      }
+
+      function playWinSound() {
+        playTone(660, 0.16, "sine", 0.12);
+        window.setTimeout(() => playTone(880, 0.22, "sine", 0.12), 140);
+      }
+
+      function setTheme(isDark) {
+        document.documentElement.dataset.theme = isDark ? "dark" : "light";
+        const button = document.getElementById("themeToggle");
+        button.textContent = isDark ? "☀️" : "🌙";
+        const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+        button.setAttribute("aria-label", label);
+        button.title = label;
+        document.querySelector('meta[name="theme-color"]').content =
+          isDark ? "#11151d" : "#f3f6fb";
+        try {
+          localStorage.setItem("numberGuessDarkMode", String(isDark));
+        } catch {
+          // Theme remains active for this page session if storage is unavailable.
+        }
+      }
+
+      function showScreen(name) {
+        for (const [screenName, element] of Object.entries(screens)) {
+          element.classList.toggle("hidden", screenName !== name);
+        }
+      }
+
+      function updateLevel() {
+        document.getElementById("levelLabel").textContent =
+          `${difficulty} · Level ${level} — Guess a number from 1 to ${maximum}.`;
+        updateStats();
+      }
+
+      function setFeedback(message, type = "") {
+        feedback.textContent = message;
+        feedback.className = `feedback${type ? ` ${type}` : ""}`;
+      }
+
+      function addDigit(digit) {
+        if (hasWon || input.value.length >= String(maximum).length) return;
+        input.value += digit;
+        setFeedback("");
+      }
+
+      function clearInput() {
+        if (hasWon) return;
+        input.value = "";
+        setFeedback("");
+      }
+
+      function checkGuess() {
+        if (hasWon) return;
+        if (!/^\d+$/.test(input.value)) {
+          setFeedback(`Enter a number from 1 to ${maximum}.`, "error");
+          return;
+        }
+
+        const guess = Number(input.value);
+        input.value = "";
+        if (guess < 1 || guess > maximum) {
+          setFeedback(`The number must be between 1 and ${maximum}.`, "error");
+          return;
+        }
+
+        attempts += 1;
+        updateStats();
+        if (guess === answer) {
+          hasWon = true;
+          setFeedback("CONGRATULATIONS! You beat this level! 🎉", "success");
+          feedback.classList.add("celebration");
+          saveBestScore();
+          playWinSound();
+          document.getElementById("checkButton").classList.add("hidden");
+          document.getElementById("nextLevelButton").classList.remove("hidden");
+          keypad.querySelectorAll("button").forEach((button) => {
+            button.disabled = true;
+          });
+          startFlowerAnimation();
+        } else {
+          lives -= 1;
+          updateStats();
+          playWrongSound();
+          if (lives === 0) {
+            hasWon = true;
+            setFeedback(`GAME OVER! The correct number was ${answer}.`, "error");
+            document.getElementById("checkButton").classList.add("hidden");
+            document.getElementById("resetButton").classList.remove("hidden");
+            keypad.querySelectorAll("button").forEach((button) => {
+              button.disabled = true;
+            });
+            return;
+          }
+
+          const difference = Math.abs(guess - answer);
+          let temperature = "Warm";
+          if (difference === 1) temperature = "Super hot!";
+          else if (difference <= 3) temperature = "Hot!";
+          else if (difference > 5) temperature = "Cold.";
+          const direction = guess < answer ? "Too low! Try higher." : "Too high! Try lower.";
+          setFeedback(`${direction} ${temperature}`, "error");
+        }
+      }
+
+      function startGame() {
+        stopFlowerAnimation();
+        level = 1;
+        maximum = ranges[difficulty];
+        answer = randomNumber(maximum);
+        hasWon = false;
+        attempts = 0;
+        lives = livesByDifficulty[difficulty];
+        input.value = "";
+        setFeedback("");
+        document.getElementById("checkButton").classList.remove("hidden");
+        document.getElementById("nextLevelButton").classList.add("hidden");
+        document.getElementById("resetButton").classList.add("hidden");
+        keypad.querySelectorAll("button").forEach((button) => {
+          button.disabled = false;
+        });
+        updateLevel();
+        showScreen("game");
+      }
+
+      function nextLevel() {
+        stopFlowerAnimation();
+        level += 1;
+        maximum = ranges[difficulty] * level;
+        answer = randomNumber(maximum);
+        hasWon = false;
+        attempts = 0;
+        lives = livesByDifficulty[difficulty];
+        input.value = "";
+        setFeedback("");
+        document.getElementById("checkButton").classList.remove("hidden");
+        document.getElementById("nextLevelButton").classList.add("hidden");
+        document.getElementById("resetButton").classList.add("hidden");
+        keypad.querySelectorAll("button").forEach((button) => {
+          button.disabled = false;
+        });
+        updateLevel();
+      }
+
+      function buildKeypad() {
+        const keys = [
+          ["1", "2", "3"],
+          ["4", "5", "6"],
+          ["7", "8", "9"],
+          ["Clear", "0", "Enter"],
+        ];
+        for (const row of keys) {
+          for (const key of row) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.textContent = key;
+            button.className = `key${key === "Clear" || key === "Enter" ? " action" : ""}`;
+            button.setAttribute("aria-label", key === "Clear" ? "Clear guess" : key);
+            button.addEventListener("click", () => {
+              if (key === "Clear") clearInput();
+              else if (key === "Enter") checkGuess();
+              else addDigit(key);
+            });
+            keypad.append(button);
+          }
+        }
+      }
+
+      function resizeCanvas() {
+        const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.floor(window.innerWidth * pixelRatio);
+        canvas.height = Math.floor(window.innerHeight * pixelRatio);
+        context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      }
+
+      function startFlowerAnimation() {
+        stopFlowerAnimation();
+        resizeCanvas();
+        const colors = ["#ff5c8a", "#ffb703", "#9b5de5", "#00bbf9", "#f15bb5"];
+        flowers = Array.from({ length: 70 }, () => ({
+          x: Math.random() * window.innerWidth,
+          y: -Math.random() * window.innerHeight,
+          speed: 2 + Math.random() * 4,
+          size: 3 + Math.random() * 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          drift: (Math.random() - 0.5) * 1.4,
+          rotation: Math.random() * Math.PI,
+        }));
+        confetti = Array.from({ length: 100 }, () => {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 2 + Math.random() * 7;
+          return {
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2,
+            velocityX: Math.cos(angle) * speed,
+            velocityY: Math.sin(angle) * speed - 2,
+            size: 4 + Math.random() * 6,
+            rotation: Math.random() * Math.PI,
+            spin: (Math.random() - 0.5) * 0.24,
+            color: colors[Math.floor(Math.random() * colors.length)],
+          };
+        });
+        animationStartedAt = performance.now();
+        animateFlowers(animationStartedAt);
+      }
+
+      function stopFlowerAnimation() {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = 0;
+        context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      }
+
+      function animateFlowers(now) {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        context.clearRect(0, 0, width, height);
+        const progress = now - animationStartedAt;
+        if (progress < 1000) {
+          for (const piece of confetti) {
+            piece.x += piece.velocityX;
+            piece.y += piece.velocityY;
+            piece.velocityX *= 0.985;
+            piece.velocityY += 0.16;
+            piece.rotation += piece.spin;
+            context.save();
+            context.translate(piece.x, piece.y);
+            context.rotate(piece.rotation);
+            context.fillStyle = piece.color;
+            context.fillRect(
+              -piece.size / 2,
+              -piece.size / 2,
+              piece.size,
+              piece.size * 0.65,
+            );
+            context.restore();
+          }
+        }
+
+        for (const flower of flowers) {
+          flower.y += flower.speed;
+          flower.x += flower.drift;
+          if (flower.y > height + 10) {
+            flower.y = -10;
+            flower.x = Math.random() * width;
+          }
+          context.save();
+          context.translate(flower.x, flower.y);
+          context.rotate(flower.rotation += 0.025);
+          context.fillStyle = flower.color;
+          for (let petal = 0; petal < 5; petal += 1) {
+            context.rotate((Math.PI * 2) / 5);
+            context.beginPath();
+            context.ellipse(0, -flower.size, flower.size * 0.55, flower.size, 0, 0, Math.PI * 2);
+            context.fill();
+          }
+          context.fillStyle = "#ffd166";
+          context.beginPath();
+          context.arc(0, 0, flower.size * 0.4, 0, Math.PI * 2);
+          context.fill();
+          context.restore();
+        }
+        if (progress < 2600) animationFrame = requestAnimationFrame(animateFlowers);
+        else context.clearRect(0, 0, width, height);
+      }
+
+      document.getElementById("startButton").addEventListener("click", startGame);
+      document.getElementById("settingsButton").addEventListener("click", () => {
+        document.getElementById("difficultySelect").value = difficulty;
+        showScreen("settings");
+      });
+      document.getElementById("saveSettingsButton").addEventListener("click", () => {
+        difficulty = document.getElementById("difficultySelect").value;
+        showScreen("home");
+      });
+      document.getElementById("settingsBackButton").addEventListener("click", () => {
+        showScreen("home");
+      });
+      document.getElementById("checkButton").addEventListener("click", checkGuess);
+      document.getElementById("nextLevelButton").addEventListener("click", nextLevel);
+      document.getElementById("resetButton").addEventListener("click", startGame);
+      document.getElementById("themeToggle").addEventListener("click", () => {
+        setTheme(document.documentElement.dataset.theme !== "dark");
+      });
+      document.getElementById("homeButton").addEventListener("click", () => {
+        stopFlowerAnimation();
+        showScreen("home");
+      });
+      window.addEventListener("resize", resizeCanvas);
+      buildKeypad();
+      try {
+        setTheme(localStorage.getItem("numberGuessDarkMode") === "true");
+      } catch {
+        setTheme(false);
+      }
+      resizeCanvas();
+      updateLevel();
+    })();
+  </script>
+</body>
+</html>
